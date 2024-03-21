@@ -9,6 +9,9 @@
 #define TILE_SIDE_LENGTH 150
 #define MARGIN 125
 #define SPACING 50
+#define MAX_SELECTED_TILES 3
+#define SELECTION_BORDER_WIDTH 5
+#define SELECTION_BORDER_COLOR GOLD
 
 typedef enum { BG_WHITE, BG_GREY, BG_BLACK } BackgroundColor;
 typedef enum { S_CIRCLE, S_SQUARE, S_TRIANGLE } Shape;
@@ -78,6 +81,54 @@ void drawTile(Tile tile, int x, int y, int size) {
 
 }
 
+bool isTileSelected(Tile tile, Tile *selectedTiles, int numSelectedTiles) {
+    for (int i = 0; i < numSelectedTiles; i++) {
+        if (selectedTiles[i].backgroundColor == tile.backgroundColor &&
+            selectedTiles[i].shape == tile.shape &&
+            selectedTiles[i].shapeColor == tile.shapeColor) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *numSelectedTiles) {
+    Vector2 mousePosition = GetMousePosition();
+
+    for (int i = 0; i < numTiles; i++) {
+        int tileX = MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
+        int tileY = MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
+
+        if (mousePosition.x >= tileX && mousePosition.x <= tileX + TILE_SIDE_LENGTH &&
+            mousePosition.y >= tileY && mousePosition.y <= tileY + TILE_SIDE_LENGTH) {
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (isTileSelected(tiles[i], selectedTiles, *numSelectedTiles)) {
+                    for (int j = 0; j < *numSelectedTiles; j++) {
+                        if (selectedTiles[j].backgroundColor == tiles[i].backgroundColor &&
+                            selectedTiles[j].shape == tiles[i].shape &&
+                            selectedTiles[j].shapeColor == tiles[i].shapeColor) {
+                            for (int k = j; k < *numSelectedTiles - 1; k++) {
+                                selectedTiles[k] = selectedTiles[k + 1];
+                            }
+                            (*numSelectedTiles)--;
+                            break;
+                        }
+
+                    }
+                } else if (*numSelectedTiles < MAX_SELECTED_TILES) {
+                    selectedTiles[*numSelectedTiles] = tiles[i];
+                    (*numSelectedTiles)++;
+                }
+            }
+        }
+    }
+}
+
+void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth) {
+    drawTile(tile, x, y, size);
+    DrawRectangleLinesEx((Rectangle){x, y, size, size}, borderWidth, borderColor);
+}
+
 int main(void) {
     unsigned int seed = 42;
     srand(seed);
@@ -102,15 +153,18 @@ int main(void) {
     shuffleArray(tilesArray, TOTAL_COMBINATIONS);
 
     // Randomly shuffle then select the first 9
-    Tile selectedTiles[NUM_TILES];
+    Tile boardTiles[NUM_TILES];
     for (int i = 0; i < NUM_TILES; i++) {
-        selectedTiles[i] = tilesArray[i];
+        boardTiles[i] = tilesArray[i];
     }
+
+    Tile selectedTiles[MAX_SELECTED_TILES];
+    int numSelectedTiles = 0;
 
     while (!WindowShouldClose())
     {
         // Update
-        // TODO: Variables
+        handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles);
 
         // Draw Loop 
         BeginDrawing();
@@ -119,7 +173,12 @@ int main(void) {
         for (int i = 0; i < NUM_TILES; i++) {
             int tileX = MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
             int tileY = MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
-            drawTile(selectedTiles[i], tileX, tileY, TILE_SIDE_LENGTH);
+            
+            if (isTileSelected(boardTiles[i], selectedTiles, numSelectedTiles)) {
+                drawTileWithBorder(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH, SELECTION_BORDER_COLOR, SELECTION_BORDER_WIDTH);
+            } else {
+                drawTile(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH);
+            }
         }
 
         EndDrawing();
