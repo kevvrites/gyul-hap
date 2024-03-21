@@ -9,9 +9,9 @@ PAGES:
     - Practice (Shows matches remaining)
     - Timed (30s/60s/120s/180s game)
 - Game / Main Screen
-  - Hap button (submit)
+  - ~Hap button (submit)~ // Not needed, just select/unselect 3 tiles
   - Gyul button
-  - Points
+  - ~Points~
   - Timer
 - Tutorial
   - Show board

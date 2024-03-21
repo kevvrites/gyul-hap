@@ -162,10 +162,12 @@ bool isTileSelected(Tile tile, Tile *selectedTiles, int numSelectedTiles) {
 void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *numSelectedTiles, Tile (*haps)[3], Tile (*duplicates)[3], int *numHaps, int *numDuplicates, int *remainingHaps, int *score) {
     Vector2 mousePosition = GetMousePosition();
 
+    // Tile Selection
     for (int i = 0; i < numTiles; i++) {
         int tileX = MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
         int tileY = MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
 
+        // Mouse Boundaries
         if (mousePosition.x >= tileX && mousePosition.x <= tileX + TILE_SIDE_LENGTH &&
             mousePosition.y >= tileY && mousePosition.y <= tileY + TILE_SIDE_LENGTH) {
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -189,19 +191,22 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
         }
     }
 
+    // Checking Puzzle Submission
     if (*numSelectedTiles == 3) {
         bool isValid = isValidHap(selectedTiles[0], selectedTiles[1], selectedTiles[2]);
         bool isDuplicate = false;
 
+        // If Valid, check if already found
         if (isValid) {
             for (int i = 0; i < *numDuplicates; i++) {
                 if (compareTiles(selectedTiles, duplicates[i])) {
                     isDuplicate = true;
-                    (*score)--;
+                    (*score)--; // Duplicate Answer
                     break;
                 }
             }
             
+            // New Solution, move to found list
             if (!isDuplicate) {
                 for (int i = 0; i < *numHaps; i++) {
                     if (compareTiles(selectedTiles, haps[i]) ||
@@ -224,18 +229,19 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
 
                         (*numHaps)--;
                         (*remainingHaps)--;
-                        (*score)++;
+                        (*score)++; // Right Answer
                         break;
                     }
                 }
             }
         } else {
-            (*score)--;
+            (*score)--; // Wrong Answer
         }
-        *numSelectedTiles = 0;
+        *numSelectedTiles = 0; // Reset selection
     }
 }
 
+// Selected tiles drawn with gold borders
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth) {
     drawTile(tile, x, y, size);
     DrawRectangleLinesEx((Rectangle){x, y, size, size}, borderWidth, borderColor);
@@ -313,7 +319,7 @@ int main(void) {
     }
     
     CloseWindow();
-    
+
     free(haps);
     free(duplicates);
 
