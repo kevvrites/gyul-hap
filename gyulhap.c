@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
@@ -22,6 +23,72 @@ typedef struct {
     Shape shape;
     ShapeColor shapeColor;
 } Tile;
+
+bool areAllSameOrAllDifferent(int value1, int value2, int value3);
+bool compareTiles(Tile *tiles1, Tile *tiles2);
+bool isValidHap(Tile tile1, Tile tile2, Tile tile3);
+int countAllHaps(Tile *boardTiles, int numTiles);
+void findAllHaps(Tile *boardTiles, int numTiles, Tile (*haps)[3]);
+void shuffleArray(Tile *array, int size);
+void drawTile(Tile tile, int x, int y, int size);
+bool isTileSelected(Tile tile, Tile *selectedTiles, int numSelectedTiles);
+void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *numSelectedTiles, Tile (*haps)[3], Tile (*duplicates)[3], int *numHaps, int *numDuplicates, int *remainingHaps, int *score);
+void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth);
+
+bool areAllSameOrAllDifferent(int value1, int value2, int value3) {
+    return (value1 == value2 && value2 == value3) || (value1 != value2 && value2 != value3 && value1 != value3);
+}
+
+bool compareTiles(Tile *tiles1, Tile *tiles2) {
+    for (int i = 0; i < 3; i++) {
+        if (tiles1[i].backgroundColor != tiles2[i].backgroundColor ||
+            tiles1[i].shape != tiles2[i].shape ||
+            tiles1[i].shapeColor != tiles2[i].shapeColor) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool isValidHap(Tile tile1, Tile tile2, Tile tile3) {
+    bool backgroundColorCondition = areAllSameOrAllDifferent(tile1.backgroundColor, tile2.backgroundColor, tile3.backgroundColor);
+    bool shapeCondition = areAllSameOrAllDifferent(tile1.shape, tile2.shape, tile3.shape);
+    bool shapeColorCondition = areAllSameOrAllDifferent(tile1.shapeColor, tile2.shapeColor, tile3.shapeColor);
+    return backgroundColorCondition && shapeCondition && shapeColorCondition;
+}
+
+int countAllHaps(Tile *boardTiles, int numTiles) {
+    int numHaps = 0;
+
+    for (int i = 0; i < numTiles - 2; i++) {
+        for (int j = i + 1; j < numTiles - 1; j++) {
+            for (int k = j + 1; k < numTiles; k++) {
+                if (isValidHap(boardTiles[i], boardTiles[j], boardTiles[k])) {
+                    numHaps++;
+                }
+            }
+        }
+    }
+
+    return numHaps;
+}
+
+void findAllHaps(Tile *boardTiles, int numTiles, Tile (*haps)[3]) {
+    int numHaps = 0;
+
+    for (int i = 0;i < numTiles - 2; i++) {
+        for (int j = i + 1; j < numTiles - 1; j++) {
+            for (int k = j + 1; k < numTiles; k++) {
+                if (isValidHap(boardTiles[i], boardTiles[j], boardTiles[k])) {
+                    haps[numHaps][0] = boardTiles[i];
+                    haps[numHaps][1] = boardTiles[j];
+                    haps[numHaps][2] = boardTiles[k];
+                    numHaps++;
+                }
+            }
+        }
+    }
+}
 
 void shuffleArray(Tile *array, int size) {
     for (int i = size - 1; i > 0; i--) {
@@ -92,7 +159,7 @@ bool isTileSelected(Tile tile, Tile *selectedTiles, int numSelectedTiles) {
     return false;
 }
 
-void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *numSelectedTiles) {
+void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *numSelectedTiles, Tile (*haps)[3], Tile (*duplicates)[3], int *numHaps, int *numDuplicates, int *remainingHaps, int *score) {
     Vector2 mousePosition = GetMousePosition();
 
     for (int i = 0; i < numTiles; i++) {
@@ -113,7 +180,6 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
                             (*numSelectedTiles)--;
                             break;
                         }
-
                     }
                 } else if (*numSelectedTiles < MAX_SELECTED_TILES) {
                     selectedTiles[*numSelectedTiles] = tiles[i];
@@ -122,12 +188,59 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
             }
         }
     }
+
+    if (*numSelectedTiles == 3) {
+        bool isValid = isValidHap(selectedTiles[0], selectedTiles[1], selectedTiles[2]);
+        bool isDuplicate = false;
+
+        if (isValid) {
+            for (int i = 0; i < *numDuplicates; i++) {
+                if (compareTiles(selectedTiles, duplicates[i])) {
+                    isDuplicate = true;
+                    (*score)--;
+                    break;
+                }
+            }
+            
+            if (!isDuplicate) {
+                for (int i = 0; i < *numHaps; i++) {
+                    if (compareTiles(selectedTiles, haps[i]) ||
+                        compareTiles(selectedTiles, (Tile[3]){haps[i][0], haps[i][2], haps[i][1]}) ||
+                        compareTiles(selectedTiles, (Tile[3]){haps[i][1], haps[i][0], haps[i][2]}) ||
+                        compareTiles(selectedTiles, (Tile[3]){haps[i][1], haps[i][2], haps[i][0]}) ||
+                        compareTiles(selectedTiles, (Tile[3]){haps[i][2], haps[i][0], haps[i][1]}) ||
+                        compareTiles(selectedTiles, (Tile[3]){haps[i][2], haps[i][1], haps[i][0]})) {
+                        duplicates[*numDuplicates][0] = haps[i][0];
+                        duplicates[*numDuplicates][1] = haps[i][1];
+                        duplicates[*numDuplicates][2] = haps[i][2];
+                        (*numDuplicates)++;
+
+
+                        for (int j = i; j < *numHaps - 1; j++) {
+                            haps[j][0] = haps[j + 1][0];
+                            haps[j][1] = haps[j + 1][1];
+                            haps[j][2] = haps[j + 1][2];
+                        }
+
+                        (*numHaps)--;
+                        (*remainingHaps)--;
+                        (*score)++;
+                        break;
+                    }
+                }
+            }
+        } else {
+            (*score)--;
+        }
+        *numSelectedTiles = 0;
+    }
 }
 
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth) {
     drawTile(tile, x, y, size);
     DrawRectangleLinesEx((Rectangle){x, y, size, size}, borderWidth, borderColor);
 }
+
 
 int main(void) {
     unsigned int seed = 42;
@@ -158,18 +271,33 @@ int main(void) {
         boardTiles[i] = tilesArray[i];
     }
 
+    // Make empty array of selected tiles
     Tile selectedTiles[MAX_SELECTED_TILES];
     int numSelectedTiles = 0;
+
+    // Find all valid Haps
+    int numHaps = countAllHaps(boardTiles, NUM_TILES);
+    int numDuplicates = 0;
+    Tile (*haps)[3] = malloc(numHaps * sizeof(Tile[3]));
+    findAllHaps(boardTiles, NUM_TILES, haps);
+    Tile (*duplicates)[3] = malloc(numHaps * sizeof(Tile[3]));
+
+    // Score and tracking
+    int remainingHaps = numHaps;
+    int score = 0;
 
     while (!WindowShouldClose())
     {
         // Update
-        handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles);
+        handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles, haps, duplicates, &numHaps, &numDuplicates, &remainingHaps, &score);
 
         // Draw Loop 
         BeginDrawing();
         ClearBackground(BEIGE);
         
+        DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
+        DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
+
         for (int i = 0; i < NUM_TILES; i++) {
             int tileX = MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
             int tileY = MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
@@ -183,7 +311,11 @@ int main(void) {
 
         EndDrawing();
     }
-
+    
     CloseWindow();
+    
+    free(haps);
+    free(duplicates);
+
     return 0;
 }
