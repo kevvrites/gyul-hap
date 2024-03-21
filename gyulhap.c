@@ -37,6 +37,10 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth);
 bool isValidGyul(int remainingHaps);
 void handleGyul(int remainingHaps, int *score, bool *isGameOver);
+void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame);
+void helpScreen(bool *showHelp);
+void settingsScreen(bool *showSettings);
+void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame);
 
 bool areAllSameOrAllDifferent(int value1, int value2, int value3) {
     return (value1 == value2 && value2 == value3) || (value1 != value2 && value2 != value3 && value1 != value3);
@@ -273,7 +277,30 @@ void handleGyul(int remainingHaps, int *score, bool *isGameOver) {
     }
 }
 
+void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame) {
+    // TODO
+}
+
+void helpScreen(bool *showHelp) {
+    // TODO
+}
+
+void settingsScreen(bool *showSettings) {
+    // TODO
+}
+
+void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) {
+    // TODO
+}
+
 int main(void) {
+    bool startGame = false;
+    bool showHelp = false;
+    bool showSettings = false;
+    bool exitGame = false;
+    bool playAgain = false;
+    bool quitToMenu = false;
+
     bool isGameOver = false;
     unsigned int seed = 42;
     srand(seed);
@@ -320,41 +347,83 @@ int main(void) {
     int remainingHaps = numHaps;
     int score = 0;
     
-
-    while (!WindowShouldClose() && !isGameOver)
-    {
-        // Update
-        handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles, haps, duplicates, &numHaps, &numDuplicates, &remainingHaps, &score);
-        handleGyul(remainingHaps, &score, &isGameOver);
-
-        // Draw Loop
-        BeginDrawing();
-        ClearBackground(BEIGE);
-        
-        DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
-        DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
-
-        // Draw tiles
-        for (int i = 0; i < NUM_TILES; i++) {
-            int tileX = H_MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
-            int tileY = V_MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
-            
-            if (isTileSelected(boardTiles[i], selectedTiles, numSelectedTiles)) {
-                drawTileWithBorder(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH, SELECTION_BORDER_COLOR, SELECTION_BORDER_WIDTH);
-            } else {
-                drawTile(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH);
-            }
+    while (!exitGame) {
+        if (!startGame) {
+            startScreen(&startGame, &showHelp, &showSettings, &exitGame);
         }
 
-        // Draw GYUL button
-        DrawRectangle(300, 700, 200, 50, DARKBLUE);
-        DrawText("GYUL", 300 + (200 - gyulTextSize.x) / 2, 700 + (50 - gyulTextSize.y) / 2, 50, RAYWHITE);
+        if (showHelp) {
+            helpScreen(&showHelp);
+        }
 
-        EndDrawing();
+        if (showSettings) {
+            settingsScreen(&showSettings);
+        }
+
+        if (startGame) {
+            while (!WindowShouldClose() && !isGameOver)
+            {
+                // Update
+                handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles, haps, duplicates, &numHaps, &numDuplicates, &remainingHaps, &score);
+                handleGyul(remainingHaps, &score, &isGameOver);
+
+                // Draw Loop
+                BeginDrawing();
+                ClearBackground(BEIGE);
+                
+                DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
+                DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
+
+                // Draw tiles
+                for (int i = 0; i < NUM_TILES; i++) {
+                    int tileX = H_MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
+                    int tileY = V_MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
+                    
+                    if (isTileSelected(boardTiles[i], selectedTiles, numSelectedTiles)) {
+                        drawTileWithBorder(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH, SELECTION_BORDER_COLOR, SELECTION_BORDER_WIDTH);
+                    } else {
+                        drawTile(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH);
+                    }
+                }
+
+                // Draw GYUL button
+                DrawRectangle(300, 700, 200, 50, DARKBLUE);
+                DrawText("GYUL", 300 + (200 - gyulTextSize.x) / 2, 700 + (50 - gyulTextSize.y) / 2, 50, RAYWHITE);
+
+                EndDrawing();
+            }
+
+            free(haps);
+            free(duplicates);
+
+            endingScreen(score, &playAgain, &quitToMenu, &exitGame);
+
+            if (playAgain) {
+                shuffleArray(tilesArray, TOTAL_COMBINATIONS);
+
+                Tile boardTiles[NUM_TILES];
+                for (int i = 0; i < NUM_TILES; i++) {
+                    boardTiles[i] = tilesArray[i];
+                }
+
+                numSelectedTiles = 0;
+
+                numHaps = countAllHaps(boardTiles, NUM_TILES);
+                numDuplicates = 0;
+                
+                haps = malloc(numHaps * sizeof(Tile[3]));
+                findAllHaps(boardTiles, NUM_TILES, haps);
+                duplicates = malloc(numHaps * sizeof(Tile[3]));
+
+                remainingHaps = numHaps;
+                score = 0;
+
+                startGame = true;
+            } else if (quitToMenu) {
+                startGame = false;
+            }
+        }
     }
-
-    free(haps);
-    free(duplicates);
 
     CloseWindow();
 
