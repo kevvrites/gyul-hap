@@ -8,7 +8,8 @@
 #define NUM_TILES 9
 #define TOTAL_COMBINATIONS 27
 #define TILE_SIDE_LENGTH 150
-#define MARGIN 125
+#define H_MARGIN 125
+#define V_MARGIN 100
 #define SPACING 50
 #define MAX_SELECTED_TILES 3
 #define SELECTION_BORDER_WIDTH 5
@@ -34,6 +35,8 @@ void drawTile(Tile tile, int x, int y, int size);
 bool isTileSelected(Tile tile, Tile *selectedTiles, int numSelectedTiles);
 void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *numSelectedTiles, Tile (*haps)[3], Tile (*duplicates)[3], int *numHaps, int *numDuplicates, int *remainingHaps, int *score);
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth);
+bool isValidGyul(int *remainingHaps);
+void handleGyul(int *remainingHaps, int *score, bool *isGameOver);
 
 bool areAllSameOrAllDifferent(int value1, int value2, int value3) {
     return (value1 == value2 && value2 == value3) || (value1 != value2 && value2 != value3 && value1 != value3);
@@ -164,8 +167,8 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
 
     // Tile Selection
     for (int i = 0; i < numTiles; i++) {
-        int tileX = MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
-        int tileY = MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
+        int tileX = H_MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
+        int tileY = V_MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
 
         // Mouse Boundaries
         if (mousePosition.x >= tileX && mousePosition.x <= tileX + TILE_SIDE_LENGTH &&
@@ -247,14 +250,40 @@ void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, in
     DrawRectangleLinesEx((Rectangle){x, y, size, size}, borderWidth, borderColor);
 }
 
+bool isValidGyul(int *remainingHaps) {
+    if (remainingHaps == 0) {
+        return true;
+    }
+    return false;
+}
+
+void handleGyul(int *remainingHaps, int *score, bool *isGameOver) {
+    Vector2 mousePosition = GetMousePosition();
+
+    // Mouse Boundaries
+    if (mousePosition.x >= 300 && mousePosition.x <= 500 &&
+        mousePosition.y >= 700 && mousePosition.y <= 750) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (isValidGyul(remainingHaps)) {
+                (*score) += 3;
+                (*isGameOver) = true;
+            } else {
+                (*score) -= 1;
+            }
+        }
+    }
+}
 
 int main(void) {
+    bool isGameOver = false;
     unsigned int seed = 42;
     srand(seed);
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "GYUL HAP"); 
     SetTargetFPS(60);
     
+    Vector2 gyulTextSize = MeasureTextEx(GetFontDefault(), "GYUL", 50, 1);
+
     // Make an array of the 27 unique tiles
     Tile tilesArray[TOTAL_COMBINATIONS];
     int index = 0;
@@ -291,37 +320,53 @@ int main(void) {
     // Score and tracking
     int remainingHaps = numHaps;
     int score = 0;
+    
 
     while (!WindowShouldClose())
     {
-        // Update
-        handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles, haps, duplicates, &numHaps, &numDuplicates, &remainingHaps, &score);
+        while (!isGameOver) {
+            // Update
+            handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles, haps, duplicates, &numHaps, &numDuplicates, &remainingHaps, &score);
+            handleGyul(&remainingHaps, &score, &isGameOver);
 
-        // Draw Loop 
-        BeginDrawing();
-        ClearBackground(BEIGE);
-        
-        DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
-        DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
-
-        for (int i = 0; i < NUM_TILES; i++) {
-            int tileX = MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
-            int tileY = MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
+            // Draw Loop
+            BeginDrawing();
+            ClearBackground(BEIGE);
             
-            if (isTileSelected(boardTiles[i], selectedTiles, numSelectedTiles)) {
-                drawTileWithBorder(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH, SELECTION_BORDER_COLOR, SELECTION_BORDER_WIDTH);
-            } else {
-                drawTile(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH);
+            DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
+            DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
+
+            // Draw tiles
+            for (int i = 0; i < NUM_TILES; i++) {
+                int tileX = H_MARGIN + ((i % 3) * SPACING) + (i % 3) * TILE_SIDE_LENGTH;
+                int tileY = V_MARGIN + ((i / 3) * SPACING) + (i / 3) * TILE_SIDE_LENGTH;
+                
+                if (isTileSelected(boardTiles[i], selectedTiles, numSelectedTiles)) {
+                    drawTileWithBorder(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH, SELECTION_BORDER_COLOR, SELECTION_BORDER_WIDTH);
+                } else {
+                    drawTile(boardTiles[i], tileX, tileY, TILE_SIDE_LENGTH);
+                }
             }
+
+            // Draw GYUL button
+            DrawRectangle(300, 700, 200, 50, DARKBLUE);
+            DrawText("GYUL", 300 + (200 - gyulTextSize.x) / 2, 700 + (50 - gyulTextSize.y) / 2, 50, RAYWHITE);
+
+            EndDrawing();
         }
-
-        EndDrawing();
+        
+        free(haps);
+        free(duplicates);
     }
-    
-    CloseWindow();
 
-    free(haps);
-    free(duplicates);
+    // Ending Screen
+    BeginDrawing();
+    ClearBackground(BLACK); 
+
+    DrawText("Game Over", (WINDOW_WIDTH - MeasureText("Game Over", 40)) / 2, WINDOW_HEIGHT / 2 - 50, 40, BLACK);
+    DrawText(TextFormat("Final Score: %d", score), (WINDOW_WIDTH - MeasureText(TextFormat("Final Score: %d", score), 30)) / 2, WINDOW_HEIGHT / 2, 30, WHITE);
+   
+    CloseWindow();
 
     return 0;
 }
