@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
@@ -25,6 +26,7 @@ typedef struct {
     ShapeColor shapeColor;
 } Tile;
 
+Color bgColor = BEIGE;
 bool areAllSameOrAllDifferent(int value1, int value2, int value3);
 bool compareTiles(Tile *tiles1, Tile *tiles2);
 bool isValidHap(Tile tile1, Tile tile2, Tile tile3);
@@ -37,7 +39,7 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth);
 bool isValidGyul(int remainingHaps);
 void handleGyul(int remainingHaps, int *score, bool *isGameOver);
-void startScreen(Color bg_color, bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame);
+void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame);
 void helpScreen(bool *showHelp);
 void settingsScreen(bool *showSettings);
 void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame);
@@ -277,7 +279,7 @@ void handleGyul(int remainingHaps, int *score, bool *isGameOver) {
     }
 }
 
-void startScreen(Color bg_color, bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame) {
+void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame) {
     Vector2 gameNameSize = MeasureTextEx(GetFontDefault(), "GYUL HAP", 120, 1);
     Vector2 buttonSize = {300, 60};
     Vector2 buttonSpacing = {0, 20};
@@ -295,7 +297,7 @@ void startScreen(Color bg_color, bool *startGame, bool *showHelp, bool *showSett
     
     while (!WindowShouldClose() && !(*startGame) && !(*showHelp) && !(*showSettings) && !(*exitGame)) {
         BeginDrawing();
-        ClearBackground(bg_color);
+        ClearBackground(bgColor);
         
         DrawTextEx(GetFontDefault(), "GYUL HAP", (Vector2){(WINDOW_WIDTH - gameNameSize.x) / 2, 120}, 120, 5, BLACK);
         
@@ -357,7 +359,7 @@ void helpScreen(bool *showHelp) {
     
     while (!WindowShouldClose() && *showHelp) {
         BeginDrawing();
-        ClearBackground(BEIGE);
+        ClearBackground(bgColor);
         
         DrawTextEx(GetFontDefault(), "Help", (Vector2){(WINDOW_WIDTH - titleSize.x) / 2, 50}, 60, 2, BLACK);
         
@@ -389,7 +391,44 @@ void helpScreen(bool *showHelp) {
 }
 
 void settingsScreen(bool *showSettings) {
-    // TODO
+    Vector2 titleSize = MeasureTextEx(GetFontDefault(), "Settings", 60, 2);
+    char *settingsText = "Change background color:";
+    Vector2 settingsTextSize = MeasureTextEx(GetFontDefault(), settingsText, 30, 2);
+    
+    Color colorOptions[5] = {BEIGE, LIGHTGRAY, SKYBLUE, PINK, ORANGE};
+    Rectangle colorRects[5];
+    Vector2 colorRectsSize = {50, 50};
+    Vector2 colorRectsSpacing = {20, 20};
+    
+    for (int i = 0; i < 5; i++) {
+        colorRects[i].width = colorRectsSize.x;
+        colorRects[i].height = colorRectsSize.y;
+        colorRects[i].x = (WINDOW_WIDTH - (5 * colorRectsSize.x + 4 * colorRectsSpacing.x)) / 2 + i * (colorRectsSize.x + colorRectsSpacing.x);
+        colorRects[i].y = WINDOW_HEIGHT / 2;
+    }
+    
+    while (!WindowShouldClose() && *showSettings) {
+        BeginDrawing();
+        ClearBackground(bgColor);
+        
+        DrawTextEx(GetFontDefault(), "Settings", (Vector2){(WINDOW_WIDTH - titleSize.x) / 2, 100}, 60, 2, BLACK);
+        DrawTextEx(GetFontDefault(), settingsText, (Vector2){(WINDOW_WIDTH - settingsTextSize.x) / 2, WINDOW_HEIGHT / 2 - 100}, 30, 2, BLACK);
+        
+        for (int i = 0; i < 5; i++) {
+            DrawRectangleRec(colorRects[i], colorOptions[i]);
+            if (CheckCollisionPointRec(GetMousePosition(), colorRects[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                bgColor = colorOptions[i];
+            }
+        }
+        
+        DrawText("Press 'S' to go back", (WINDOW_WIDTH / 2) - MeasureTextEx(GetFontDefault(), "Press 'S' to go back", 20, 1.5).x / 2, WINDOW_HEIGHT - 50, 20, GRAY);
+        
+        if (IsKeyPressed(KEY_S)) {
+            *showSettings = false;
+        }
+        
+        EndDrawing();
+    }
 }
 
 void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) {
@@ -411,7 +450,7 @@ void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) 
     
     while (!WindowShouldClose() && !(*playAgain) && !(*quitToMenu) && !(*exitGame)) {
         BeginDrawing();
-        ClearBackground(BEIGE);
+        ClearBackground(bgColor);
         
         DrawTextEx(GetFontDefault(), "ROUND COMPLETE", (Vector2){(WINDOW_WIDTH - titleSize.x) / 2, 100}, 60, 2, BLACK);
         DrawTextEx(GetFontDefault(), scoreText, (Vector2){(WINDOW_WIDTH - scoreSize.x) / 2, 200}, 40, 2, BLACK);
@@ -441,7 +480,6 @@ void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) 
 }
 
 int main(void) {
-    Color bg_color = BEIGE;
     bool startGame = true; // CHANGE TO FALSE LATER
     bool showHelp = false;
     bool showSettings = false;
@@ -497,7 +535,7 @@ int main(void) {
     
     while (!exitGame) {
         if (!startGame) {
-            startScreen(bg_color, &startGame, &showHelp, &showSettings, &exitGame);
+            startScreen(&startGame, &showHelp, &showSettings, &exitGame);
         }
 
         if (showHelp) {
@@ -517,7 +555,7 @@ int main(void) {
 
                 // Draw Loop
                 BeginDrawing();
-                ClearBackground(bg_color);
+                ClearBackground(bgColor);
                 
                 DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
                 DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
@@ -549,7 +587,6 @@ int main(void) {
             if (playAgain) {
                 shuffleArray(tilesArray, TOTAL_COMBINATIONS);
 
-                Tile boardTiles[NUM_TILES];
                 for (int i = 0; i < NUM_TILES; i++) {
                     boardTiles[i] = tilesArray[i];
                 }
@@ -567,8 +604,10 @@ int main(void) {
                 score = 0;
 
                 startGame = true;
+                isGameOver = false;
             } else if (quitToMenu) {
                 startGame = false;
+                isGameOver = false;
             }
         }
     }
