@@ -37,7 +37,7 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth);
 bool isValidGyul(int remainingHaps);
 void handleGyul(int remainingHaps, int *score, bool *isGameOver);
-void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame);
+void startScreen(Color bg_color, bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame);
 void helpScreen(bool *showHelp);
 void settingsScreen(bool *showSettings);
 void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame);
@@ -277,12 +277,115 @@ void handleGyul(int remainingHaps, int *score, bool *isGameOver) {
     }
 }
 
-void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame) {
-    // TODO
+void startScreen(Color bg_color, bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame) {
+    Vector2 gameNameSize = MeasureTextEx(GetFontDefault(), "GYUL HAP", 120, 1);
+    Vector2 buttonSize = {300, 60};
+    Vector2 buttonSpacing = {0, 20};
+
+    Rectangle playButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2 - buttonSize.y - buttonSpacing.y, buttonSize.x, buttonSize.y};
+    Rectangle helpButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2, buttonSize.x, buttonSize.y};
+    Rectangle settingsButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2 + buttonSize.y + buttonSpacing.y, buttonSize.x, buttonSize.y};
+    
+    Vector2 playTextSize = MeasureTextEx(GetFontDefault(), "Play Game", 30, 1);
+    Vector2 helpTextSize = MeasureTextEx(GetFontDefault(), "Help", 30, 1);
+    Vector2 settingsTextSize = MeasureTextEx(GetFontDefault(), "Settings", 30, 1);
+    
+    char *creditText = "Made with raylib - Kevin Liu 2024";
+    Vector2 creditTextSize = MeasureTextEx(GetFontDefault(), creditText, 20, 1);
+    
+    while (!WindowShouldClose() && !(*startGame) && !(*showHelp) && !(*showSettings) && !(*exitGame)) {
+        BeginDrawing();
+        ClearBackground(bg_color);
+        
+        DrawTextEx(GetFontDefault(), "GYUL HAP", (Vector2){(WINDOW_WIDTH - gameNameSize.x) / 2, 120}, 120, 5, BLACK);
+        
+        DrawRectangleRec(playButton, LIGHTGRAY);
+        DrawTextEx(GetFontDefault(), "Play Game", (Vector2){playButton.x + (playButton.width - playTextSize.x) / 2, playButton.y + (playButton.height - playTextSize.y) / 2}, 30, 1.5, BLACK);
+        
+        DrawRectangleRec(helpButton, LIGHTGRAY);
+        DrawTextEx(GetFontDefault(), "Help", (Vector2){helpButton.x + (helpButton.width - helpTextSize.x) / 2, helpButton.y + (helpButton.height - helpTextSize.y) / 2}, 30, 1.5, BLACK);
+        
+        DrawRectangleRec(settingsButton, LIGHTGRAY);
+        DrawTextEx(GetFontDefault(), "Settings", (Vector2){settingsButton.x + (settingsButton.width - settingsTextSize.x) / 2, settingsButton.y + (settingsButton.height - settingsTextSize.y) / 2}, 30, 1.5, BLACK);
+        
+        DrawTextEx(GetFontDefault(), creditText, (Vector2){(WINDOW_WIDTH - creditTextSize.x) / 2, WINDOW_HEIGHT - creditTextSize.y - 20}, 20, 1, GRAY);
+        
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 mousePos = GetMousePosition();
+            if (CheckCollisionPointRec(mousePos, playButton)) {
+                *startGame = true;
+            } else if (CheckCollisionPointRec(mousePos, helpButton)) {
+                *showHelp = true;
+            } else if (CheckCollisionPointRec(mousePos, settingsButton)) {
+                *showSettings = true;
+            }
+        }
+        
+        EndDrawing();
+    }
 }
 
 void helpScreen(bool *showHelp) {
-    // TODO
+    Vector2 titleSize = MeasureTextEx(GetFontDefault(), "Help", 60, 2);
+    char *helpText[] = {
+        "GYUL HAP is a puzzle game where you need to find HAPs and GYUL.",
+        "A HAP is a set of 3 tiles that satisfies the following condition:",
+        "- The tile properties must ALL match or ALL be different",
+        "Once all HAPs are found, press GYUL",
+        "",
+        "Scoring: 1 point for successful HAP, 3 points for GYUL.",
+        "-1 point for incorrect HAPs and GYULs",
+        "Example HAPs:",
+        ""
+    };
+    int numLines = sizeof(helpText) / sizeof(helpText[0]);
+    Vector2 textSize = MeasureTextEx(GetFontDefault(), helpText[0], 20, 1.5);
+    float textSpacing = 10;
+    float exampleSpacing = 20;
+    
+    Tile exampleHap1[3] = {
+        {BG_WHITE, S_CIRCLE, C_RED},
+        {BG_WHITE, S_SQUARE, C_RED},
+        {BG_WHITE, S_TRIANGLE, C_RED}
+    };
+    
+    Tile exampleHap2[3] = {
+        {BG_WHITE, S_CIRCLE, C_RED},
+        {BG_GREY, S_SQUARE, C_YELLOW},
+        {BG_BLACK, S_TRIANGLE, C_BLUE}
+    };
+    
+    while (!WindowShouldClose() && *showHelp) {
+        BeginDrawing();
+        ClearBackground(BEIGE);
+        
+        DrawTextEx(GetFontDefault(), "Help", (Vector2){(WINDOW_WIDTH - titleSize.x) / 2, 50}, 60, 2, BLACK);
+        
+        for (int i = 0; i < numLines; i++) {
+            DrawTextEx(GetFontDefault(), helpText[i], (Vector2){50, 150 + i * (textSize.y + textSpacing)}, 20, 1.5, BLACK);
+        }
+        
+        float exampleWidth = 3 * TILE_SIDE_LENGTH + 2 * exampleSpacing;
+        float exampleY = 100 + (numLines + 1) * (textSize.y + textSpacing);
+        float exampleX = (WINDOW_WIDTH - exampleWidth) / 2;
+        
+        for (int i = 0; i < 3; i++) {
+            drawTile(exampleHap1[i], exampleX + i * (TILE_SIDE_LENGTH + exampleSpacing), exampleY, TILE_SIDE_LENGTH);
+        }
+        
+        exampleY += TILE_SIDE_LENGTH + exampleSpacing;
+        for (int i = 0; i < 3; i++) {
+            drawTile(exampleHap2[i], exampleX + i * (TILE_SIDE_LENGTH + exampleSpacing), exampleY, TILE_SIDE_LENGTH);
+        }
+        
+        DrawText("Press 'H' to go back", (WINDOW_WIDTH / 2) - MeasureTextEx(GetFontDefault(), "Press 'H' to go back", 20, 1.5).x / 2, WINDOW_HEIGHT - 50, 20, GRAY);
+        
+        if (IsKeyPressed(KEY_H)) {
+            *showHelp = false;
+        }
+        
+        EndDrawing();
+    }
 }
 
 void settingsScreen(bool *showSettings) {
@@ -290,11 +393,56 @@ void settingsScreen(bool *showSettings) {
 }
 
 void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) {
-    // TODO
+    Vector2 titleSize = MeasureTextEx(GetFontDefault(), "ROUND COMPLETE", 60, 2);
+    char scoreText[20];
+    snprintf(scoreText, sizeof(scoreText), "SCORE: %d", score);
+    Vector2 scoreSize = MeasureTextEx(GetFontDefault(), scoreText, 40, 2);
+    
+    Vector2 buttonSize = {300, 60};
+    Vector2 buttonSpacing = {0, 20};
+    
+    Rectangle playAgainButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2 - buttonSize.y - buttonSpacing.y, buttonSize.x, buttonSize.y};
+    Rectangle quitToMenuButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2, buttonSize.x, buttonSize.y};
+    Rectangle exitGameButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2 + buttonSize.y + buttonSpacing.y, buttonSize.x, buttonSize.y};
+    
+    Vector2 playAgainTextSize = MeasureTextEx(GetFontDefault(), "Play Again", 30, 2);
+    Vector2 quitToMenuTextSize = MeasureTextEx(GetFontDefault(), "Quit To Menu", 30, 2);
+    Vector2 exitGameTextSize = MeasureTextEx(GetFontDefault(), "Exit Game", 30, 2);
+    
+    while (!WindowShouldClose() && !(*playAgain) && !(*quitToMenu) && !(*exitGame)) {
+        BeginDrawing();
+        ClearBackground(BEIGE);
+        
+        DrawTextEx(GetFontDefault(), "ROUND COMPLETE", (Vector2){(WINDOW_WIDTH - titleSize.x) / 2, 100}, 60, 2, BLACK);
+        DrawTextEx(GetFontDefault(), scoreText, (Vector2){(WINDOW_WIDTH - scoreSize.x) / 2, 200}, 40, 2, BLACK);
+        
+        DrawRectangleRec(playAgainButton, LIGHTGRAY);
+        DrawTextEx(GetFontDefault(), "Play Again", (Vector2){playAgainButton.x + (playAgainButton.width - playAgainTextSize.x) / 2, playAgainButton.y + (playAgainButton.height - playAgainTextSize.y) / 2}, 30, 2, BLACK);
+        
+        DrawRectangleRec(quitToMenuButton, LIGHTGRAY);
+        DrawTextEx(GetFontDefault(), "Quit To Menu", (Vector2){quitToMenuButton.x + (quitToMenuButton.width - quitToMenuTextSize.x) / 2, quitToMenuButton.y + (quitToMenuButton.height - quitToMenuTextSize.y) / 2}, 30, 2, BLACK);
+        
+        DrawRectangleRec(exitGameButton, LIGHTGRAY);
+        DrawTextEx(GetFontDefault(), "Exit Game", (Vector2){exitGameButton.x + (exitGameButton.width - exitGameTextSize.x) / 2, exitGameButton.y + (exitGameButton.height - exitGameTextSize.y) / 2}, 30, 2, BLACK);
+        
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 mousePos = GetMousePosition();
+            if (CheckCollisionPointRec(mousePos, playAgainButton)) {
+                *playAgain = true;
+            } else if (CheckCollisionPointRec(mousePos, quitToMenuButton)) {
+                *quitToMenu = true;
+            } else if (CheckCollisionPointRec(mousePos, exitGameButton)) {
+                *exitGame = true;
+            }
+        }
+        
+        EndDrawing();
+    }
 }
 
 int main(void) {
-    bool startGame = false;
+    Color bg_color = BEIGE;
+    bool startGame = true; // CHANGE TO FALSE LATER
     bool showHelp = false;
     bool showSettings = false;
     bool exitGame = false;
@@ -349,7 +497,7 @@ int main(void) {
     
     while (!exitGame) {
         if (!startGame) {
-            startScreen(&startGame, &showHelp, &showSettings, &exitGame);
+            startScreen(bg_color, &startGame, &showHelp, &showSettings, &exitGame);
         }
 
         if (showHelp) {
@@ -369,7 +517,7 @@ int main(void) {
 
                 // Draw Loop
                 BeginDrawing();
-                ClearBackground(BEIGE);
+                ClearBackground(bg_color);
                 
                 DrawText(TextFormat("Remaining Haps: %d", remainingHaps), 10, 10, 20, BLACK);
                 DrawText(TextFormat("Score: %d", score), 10, 40, 20, BLACK);
