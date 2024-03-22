@@ -488,7 +488,7 @@ int main(void) {
     bool quitToMenu = false;
 
     bool isGameOver = false;
-    unsigned int seed = 10;
+    unsigned int seed = 42;
     srand(seed);
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "GYUL HAP"); 
