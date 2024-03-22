@@ -480,7 +480,7 @@ void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) 
 }
 
 int main(void) {
-    bool startGame = true; // CHANGE TO FALSE LATER
+    bool startGame = false; // CHANGE TO FALSE LATER
     bool showHelp = false;
     bool showSettings = false;
     bool exitGame = false;
@@ -488,7 +488,7 @@ int main(void) {
     bool quitToMenu = false;
 
     bool isGameOver = false;
-    unsigned int seed = 42;
+    unsigned int seed = 10;
     srand(seed);
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "GYUL HAP"); 
@@ -509,29 +509,6 @@ int main(void) {
             }
         }
     }
-
-    shuffleArray(tilesArray, TOTAL_COMBINATIONS);
-
-    // Randomly shuffle then select the first 9
-    Tile boardTiles[NUM_TILES];
-    for (int i = 0; i < NUM_TILES; i++) {
-        boardTiles[i] = tilesArray[i];
-    }
-
-    // Make empty array of selected tiles
-    Tile selectedTiles[MAX_SELECTED_TILES];
-    int numSelectedTiles = 0;
-
-    // Find all valid Haps
-    int numHaps = countAllHaps(boardTiles, NUM_TILES);
-    int numDuplicates = 0;
-    Tile (*haps)[3] = malloc(numHaps * sizeof(Tile[3]));
-    findAllHaps(boardTiles, NUM_TILES, haps);
-    Tile (*duplicates)[3] = malloc(numHaps * sizeof(Tile[3]));
-
-    // Score and tracking
-    int remainingHaps = numHaps;
-    int score = 0;
     
     while (!exitGame) {
         if (!startGame) {
@@ -547,6 +524,31 @@ int main(void) {
         }
 
         if (startGame) {
+            isGameOver = false;
+
+            shuffleArray(tilesArray, TOTAL_COMBINATIONS);
+
+            // Randomly shuffle then select the first 9
+            Tile boardTiles[NUM_TILES];
+            for (int i = 0; i < NUM_TILES; i++) {
+                boardTiles[i] = tilesArray[i];
+            }
+
+            // Make empty array of selected tiles
+            Tile selectedTiles[MAX_SELECTED_TILES];
+            int numSelectedTiles = 0;
+
+            // Find all valid Haps
+            int numHaps = countAllHaps(boardTiles, NUM_TILES);
+            int numDuplicates = 0;
+            Tile (*haps)[3] = malloc(numHaps * sizeof(Tile[3]));
+            findAllHaps(boardTiles, NUM_TILES, haps);
+            Tile (*duplicates)[3] = malloc(numHaps * sizeof(Tile[3]));
+
+            // Score and tracking
+            int remainingHaps = numHaps;
+            int score = 0;
+
             while (!WindowShouldClose() && !isGameOver)
             {
                 // Update
@@ -604,7 +606,7 @@ int main(void) {
                 score = 0;
 
                 startGame = true;
-                isGameOver = false;
+                playAgain = false;
             } else if (quitToMenu) {
                 startGame = false;
                 isGameOver = false;
