@@ -39,10 +39,10 @@ void handleTileSelection(Tile *tiles, int numTiles, Tile *selectedTiles, int *nu
 void drawTileWithBorder(Tile tile, int x, int y, int size, Color borderColor, int borderWidth);
 bool isValidGyul(int remainingHaps);
 void handleGyul(int remainingHaps, int *score, bool *isGameOver);
-void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame);
+void startScreen(bool *startGame, bool *showHelp, bool *showSettings);
 void helpScreen(bool *showHelp);
 void settingsScreen(bool *showSettings);
-void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame);
+void endingScreen(int score, bool *playAgain, bool *quitToMenu);
 
 bool areAllSameOrAllDifferent(int value1, int value2, int value3) {
     return (value1 == value2 && value2 == value3) || (value1 != value2 && value2 != value3 && value1 != value3);
@@ -279,7 +279,7 @@ void handleGyul(int remainingHaps, int *score, bool *isGameOver) {
     }
 }
 
-void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exitGame) {
+void startScreen(bool *startGame, bool *showHelp, bool *showSettings) {
     Vector2 gameNameSize = MeasureTextEx(GetFontDefault(), "GYUL HAP", 120, 1);
     Vector2 buttonSize = {300, 60};
     Vector2 buttonSpacing = {0, 20};
@@ -295,7 +295,7 @@ void startScreen(bool *startGame, bool *showHelp, bool *showSettings, bool *exit
     char *creditText = "Made with raylib - Kevin Liu 2024";
     Vector2 creditTextSize = MeasureTextEx(GetFontDefault(), creditText, 20, 1);
     
-    while (!WindowShouldClose() && !(*startGame) && !(*showHelp) && !(*showSettings) && !(*exitGame)) {
+    while (!WindowShouldClose() && !(*startGame) && !(*showHelp) && !(*showSettings)) {
         BeginDrawing();
         ClearBackground(bgColor);
         
@@ -431,7 +431,7 @@ void settingsScreen(bool *showSettings) {
     }
 }
 
-void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) {
+void endingScreen(int score, bool *playAgain, bool *quitToMenu) {
     Vector2 titleSize = MeasureTextEx(GetFontDefault(), "ROUND COMPLETE", 60, 2);
     char scoreText[20];
     snprintf(scoreText, sizeof(scoreText), "SCORE: %d", score);
@@ -442,13 +442,11 @@ void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) 
     
     Rectangle playAgainButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2 - buttonSize.y - buttonSpacing.y, buttonSize.x, buttonSize.y};
     Rectangle quitToMenuButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2, buttonSize.x, buttonSize.y};
-    Rectangle exitGameButton = {(WINDOW_WIDTH - buttonSize.x) / 2, WINDOW_HEIGHT / 2 + buttonSize.y + buttonSpacing.y, buttonSize.x, buttonSize.y};
     
     Vector2 playAgainTextSize = MeasureTextEx(GetFontDefault(), "Play Again", 30, 2);
     Vector2 quitToMenuTextSize = MeasureTextEx(GetFontDefault(), "Quit To Menu", 30, 2);
-    Vector2 exitGameTextSize = MeasureTextEx(GetFontDefault(), "Exit Game", 30, 2);
     
-    while (!WindowShouldClose() && !(*playAgain) && !(*quitToMenu) && !(*exitGame)) {
+    while (!WindowShouldClose() && !(*playAgain) && !(*quitToMenu)) {
         BeginDrawing();
         ClearBackground(bgColor);
         
@@ -461,17 +459,13 @@ void endingScreen(int score, bool *playAgain, bool *quitToMenu, bool *exitGame) 
         DrawRectangleRec(quitToMenuButton, LIGHTGRAY);
         DrawTextEx(GetFontDefault(), "Quit To Menu", (Vector2){quitToMenuButton.x + (quitToMenuButton.width - quitToMenuTextSize.x) / 2, quitToMenuButton.y + (quitToMenuButton.height - quitToMenuTextSize.y) / 2}, 30, 2, BLACK);
         
-        DrawRectangleRec(exitGameButton, LIGHTGRAY);
-        DrawTextEx(GetFontDefault(), "Exit Game", (Vector2){exitGameButton.x + (exitGameButton.width - exitGameTextSize.x) / 2, exitGameButton.y + (exitGameButton.height - exitGameTextSize.y) / 2}, 30, 2, BLACK);
-        
+    
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             Vector2 mousePos = GetMousePosition();
             if (CheckCollisionPointRec(mousePos, playAgainButton)) {
                 *playAgain = true;
             } else if (CheckCollisionPointRec(mousePos, quitToMenuButton)) {
                 *quitToMenu = true;
-            } else if (CheckCollisionPointRec(mousePos, exitGameButton)) {
-                *exitGame = true;
             }
         }
         
@@ -483,7 +477,6 @@ int main(void) {
     bool startGame = false; // CHANGE TO FALSE LATER
     bool showHelp = false;
     bool showSettings = false;
-    bool exitGame = false;
     bool playAgain = false;
     bool quitToMenu = false;
 
@@ -510,9 +503,9 @@ int main(void) {
         }
     }
     
-    while (!exitGame) {
+    while (!WindowShouldClose()) {
         if (!startGame) {
-            startScreen(&startGame, &showHelp, &showSettings, &exitGame);
+            startScreen(&startGame, &showHelp, &showSettings);
         }
 
         if (showHelp) {
@@ -525,6 +518,7 @@ int main(void) {
 
         if (startGame) {
             isGameOver = false;
+            playAgain = false;
 
             shuffleArray(tilesArray, TOTAL_COMBINATIONS);
 
@@ -551,6 +545,7 @@ int main(void) {
 
             while (!WindowShouldClose() && !isGameOver)
             {
+
                 // Update
                 handleTileSelection(boardTiles, NUM_TILES, selectedTiles, &numSelectedTiles, haps, duplicates, &numHaps, &numDuplicates, &remainingHaps, &score);
                 handleGyul(remainingHaps, &score, &isGameOver);
@@ -584,7 +579,7 @@ int main(void) {
             free(haps);
             free(duplicates);
 
-            endingScreen(score, &playAgain, &quitToMenu, &exitGame);
+            endingScreen(score, &playAgain, &quitToMenu);
 
             if (playAgain) {
                 shuffleArray(tilesArray, TOTAL_COMBINATIONS);
